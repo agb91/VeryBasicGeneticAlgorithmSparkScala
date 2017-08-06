@@ -6,23 +6,32 @@ import org.apache.spark.rdd.RDD;
 import org.apache.spark.rdd.PairRDDFunctions
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
-import com.pack.simpler.Gene
+import com.pack.simpler.Animal
 
 
 object MainAnalyzer {
   
-  def firstGenerator: ( Int , SparkContext ) => RDD[ ( String , Gene ) ] =
+  def firstGenerator: ( Int , SparkContext ) => RDD[ ( String , Animal ) ] =
      ( n : Int , sc : SparkContext ) =>
  {
-   var arrayResult = new Array[ (String , Gene) ]( n )
+   var arrayResult = new Array[ (String , Animal) ]( n )
    
    var a = 0;
    val r = scala.util.Random   
+   var continue = true
     for( a <- 0 to (n-1) ){
-      var g : Gene = new Gene() with Serializable
-      
-      g.number = r.nextInt(10)
-      arrayResult( a ) = ( "creature" , g )
+      do{
+        var g : Animal = new Animal() with Serializable
+        g.speed = r.nextInt(5)
+        g.dimension = r.nextInt(3)
+        g.lowFoodNeed = r.nextInt(5)
+        g.lowWaterNeed = r.nextInt(5)
+        continue = !g.isPossible()
+        if(g.isPossible())
+        {
+          arrayResult( a ) = ( "creature" , g )
+        }
+      } while ( continue )
     }
     
     sc.parallelize( arrayResult , 4 )
@@ -42,14 +51,18 @@ object MainAnalyzer {
     var generation = firstGenerator( 10 , sc )
    
     var a = 0;
-    var bestSeed = 0.0
+    var bestExemplary = new Animal()
     for( a <- 0 to (25) )
     {
       
-      generation = work.map(generation , bestSeed)
+      generation = work.map(generation , bestExemplary)
       var best = work.reduce(generation)
-      bestSeed = best.collect()(0)._2.number
-      println( "name: " + best.collect()(0)._1 + ";  number: " + best.collect()(0)._2.number )
+      bestExemplary = best.collect()(0)._2
+      println( "name: " + best.collect()(0)._1 + ";  dimension: " + best.collect()(0)._2.dimension
+      + ";  speed: " + best.collect()(0)._2.speed    
+      + ";  lowWaterNeed: " + best.collect()(0)._2.lowWaterNeed
+      + ";  lowFoodNeed: " + best.collect()(0)._2.lowFoodNeed
+      )
     }
         
      sc.stop 
